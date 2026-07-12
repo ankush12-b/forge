@@ -1,6 +1,6 @@
 # Forge
 
-⚡ Rewrites your rough prompts into sharp ones — right inside Claude, ChatGPT, and Gemini. Click a button, get a better prompt, before you hit send.
+⚡ Rewrites your rough prompts into sharp ones right inside Claude, ChatGPT, and Gemini. Click a button, get a better prompt, before you hit send.
 
 **Live site:** [forgextension.vercel.app](https://forgextension.vercel.app/)
 

@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge — Sharpen your prompts, instantly</title>
+<meta name="description" content="Forge rewrites rough prompts into sharp ones on Claude, ChatGPT, and Gemini — powered by Groq, free to use.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A090C;
+    --surface: #141317;
+    --surface-2: #1B1A20;
+    --border: rgba(255,255,255,0.08);
+    --text: #F1EFF7;
+    --text-dim: #9A96A8;
+    --violet: #7C5CFC;
+    --teal: #22D3B8;
+    --gradient: linear-gradient(135deg, #7C5CFC 0%, #22D3B8 100%);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  h1, h2, h3, .display {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  code, .mono { font-family: 'JetBrains Mono', monospace; }
+
+  a { color: inherit; text-decoration: none; }
+
+  ::selection { background: var(--violet); color: white; }
+
+  /* Ambient background glow */
+  .glow-field {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .glow-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.35;
+  }
+  .glow-orb.a {
+    width: 500px; height: 500px;
+    background: var(--violet);
+    top: -150px; left: -100px;
+    animation: drift1 22s ease-in-out infinite;
+  }
+  .glow-orb.b {
+    width: 450px; height: 450px;
+    background: var(--teal);
+    top: 40%; right: -150px;
+    animation: drift2 26s ease-in-out infinite;
+  }
+  .glow-orb.c {
+    width: 350px; height: 350px;
+    background: var(--violet);
+    bottom: -100px; left: 30%;
+    animation: drift3 20s ease-in-out infinite;
+  }
+  @keyframes drift1 {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(60px, 80px) scale(1.15); }
+  }
+  @keyframes drift2 {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(-70px, 40px) scale(1.1); }
+  }
+  @keyframes drift3 {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(40px, -60px) scale(1.2); }
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(16px);
+    background: rgba(10,9,12,0.6);
+    border-bottom: 1px solid var(--border);
+  }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 17px; }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--gradient);
+    display: flex; align-items: center; justify-content: center;
+  }
+  nav .links { display: flex; gap: 28px; font-size: 14px; color: var(--text-dim); }
+  nav .links a:hover { color: var(--text); }
+  .btn-ghost {
+    border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px;
+    font-size: 13px; font-weight: 500; transition: border-color .2s;
+  }
+  .btn-ghost:hover { border-color: var(--violet); }
+
+  /* Hero */
+  .hero {
+    padding: 120px 0 100px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;
+    border: 1px solid var(--border); padding: 6px 14px; border-radius: 100px;
+    margin-bottom: 28px;
+    opacity: 0; animation: fadeUp 0.8s ease forwards 0.1s;
+  }
+  .eyebrow .pulse-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--teal);
+    box-shadow: 0 0 8px var(--teal);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .hero h1 {
+    font-size: clamp(40px, 7vw, 76px);
+    font-weight: 700;
+    line-height: 1.05;
+    margin-bottom: 24px;
+    opacity: 0; animation: fadeUp 0.8s ease forwards 0.25s;
+  }
+  .hero h1 .accent {
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p.sub {
+    font-size: 19px; color: var(--text-dim); max-width: 560px; margin: 0 auto 40px;
+    line-height: 1.6;
+    opacity: 0; animation: fadeUp 0.8s ease forwards 0.4s;
+  }
+  .hero-ctas {
+    display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+    opacity: 0; animation: fadeUp 0.8s ease forwards 0.55s;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .btn-primary {
+    background: var(--gradient);
+    color: white; font-weight: 600; font-size: 15px;
+    padding: 14px 26px; border-radius: 10px;
+    display: inline-flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 20px rgba(124,92,252,0.3);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(124,92,252,0.45); }
+  .btn-secondary {
+    border: 1px solid var(--border); color: var(--text);
+    font-weight: 500; font-size: 15px; padding: 14px 26px; border-radius: 10px;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: border-color .2s, background .2s;
+  }
+  .btn-secondary:hover { border-color: var(--teal); background: rgba(34,211,184,0.06); }
+
+  /* Live demo card */
+  .demo {
+    margin-top: 80px;
+    opacity: 0; animation: fadeUp 0.9s ease forwards 0.7s;
+  }
+  .demo-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    max-width: 640px; margin: 0 auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    overflow: hidden;
+  }
+  .demo-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+  }
+  .demo-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .demo-dot.r { background: #ff5f57; }
+  .demo-dot.y { background: #febc2e; }
+  .demo-dot.g { background: #28c840; }
+  .demo-title { margin-left: 8px; font-size: 12px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+  .demo-body { padding: 24px; text-align: left; }
+  .demo-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 8px; }
+  .demo-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; line-height: 1.6;
+    min-height: 44px;
+    color: var(--text-dim);
+  }
+  .demo-text.rough { color: #B8B4C4; }
+  .demo-divider {
+    display: flex; align-items: center; justify-content: center;
+    padding: 14px 0; gap: 10px;
+  }
+  .demo-spark {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--gradient);
+    display: flex; align-items: center; justify-content: center;
+    animation: spin 3s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .demo-text.enhanced { color: var(--text); }
+  .cursor {
+    display: inline-block; width: 2px; height: 15px; background: var(--teal);
+    animation: blink 0.9s step-start infinite; vertical-align: middle; margin-left: 2px;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Sections */
+  section { padding: 90px 0; position: relative; z-index: 1; }
+  .section-label {
+    font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--teal);
+    text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: clamp(28px, 4vw, 40px); font-weight: 600; margin-bottom: 16px; max-width: 600px;
+  }
+  .section-sub { color: var(--text-dim); font-size: 16px; max-width: 540px; line-height: 1.6; margin-bottom: 56px; }
+
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  /* How it works */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  @media (max-width: 780px) { .steps { grid-template-columns: 1fr; } }
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    position: relative;
+    transition: border-color .3s, transform .3s;
+  }
+  .step:hover { border-color: rgba(124,92,252,0.4); transform: translateY(-4px); }
+  .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+  .step h3 { font-size: 18px; margin-bottom: 10px; font-weight: 600; }
+  .step p { color: var(--text-dim); font-size: 14px; line-height: 1.6; }
+  .step-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--gradient);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 18px;
+  }
+
+  /* Platforms */
+  .platforms { display: flex; gap: 16px; flex-wrap: wrap; }
+  .platform-pill {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 14px 22px; border-radius: 100px; font-size: 14px; font-weight: 500;
+    transition: border-color .3s, transform .3s;
+  }
+  .platform-pill:hover { border-color: var(--teal); transform: scale(1.04); }
+  .platform-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gradient); }
+
+  /* Feature grid */
+  .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  @media (max-width: 780px) { .features { grid-template-columns: 1fr; } }
+  .feature {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 24px; transition: border-color .3s;
+  }
+  .feature:hover { border-color: rgba(34,211,184,0.35); }
+  .feature h4 { font-size: 16px; margin-bottom: 8px; font-weight: 600; }
+  .feature p { color: var(--text-dim); font-size: 14px; line-height: 1.6; }
+
+  /* Install */
+  .install-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 36px;
+  }
+  .install-steps { counter-reset: step; }
+  .install-step {
+    display: flex; gap: 16px; padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .install-step:last-child { border-bottom: none; }
+  .install-step-num {
+    counter-increment: step;
+    flex-shrink: 0;
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--teal);
+  }
+  .install-step-num::before { content: counter(step); }
+  .install-step-text { font-size: 14px; color: var(--text-dim); line-height: 1.6; padding-top: 4px; }
+  .install-step-text code {
+    background: var(--surface-2); padding: 2px 6px; border-radius: 4px; font-size: 13px; color: var(--text);
+  }
+
+  /* Final CTA */
+  .cta-final {
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 70px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-final::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 0%, rgba(124,92,252,0.15), transparent 60%);
+  }
+  .cta-final h2 { font-size: clamp(26px, 4vw, 36px); margin-bottom: 14px; position: relative; }
+  .cta-final p { color: var(--text-dim); margin-bottom: 32px; position: relative; }
+
+  footer {
+    padding: 40px 0 60px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+    position: relative; z-index: 1;
+  }
+  footer a:hover { color: var(--teal); }
+
+  /* Reduced motion escape hatch — must stay authoritative */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Cursor spark trail */
+  .cursor-spark {
+    position: fixed;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--gradient);
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+    filter: blur(1px);
+    mix-blend-mode: screen;
+    box-shadow: 0 0 14px rgba(124,92,252,0.7);
+    transition: opacity .3s;
+  }
+  @media (hover: none) { .cursor-spark { display: none; } }
+
+  /* Particle canvas */
+  #particles {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  /* Magnetic buttons */
+  .magnetic { will-change: transform; transition: transform 0.15s ease-out; }
+
+  /* Tilt cards */
+  .tilt { transform-style: preserve-3d; will-change: transform; }
+
+  /* Word-by-word title reveal */
+  .word-reveal { display: inline-block; overflow: hidden; }
+  .word-reveal span {
+    display: inline-block;
+    transform: translateY(110%);
+    opacity: 0;
+    transition: transform 0.6s cubic-bezier(.2,.8,.2,1), opacity 0.6s ease;
+  }
+  .word-reveal.in span { transform: translateY(0); opacity: 1; }
+
+  /* Marquee */
+  .marquee-wrap {
+    overflow: hidden;
+    position: relative;
+    mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+  }
+  .marquee-track {
+    display: flex;
+    gap: 40px;
+    width: max-content;
+    animation: marquee 18s linear infinite;
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .marquee-item {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .marquee-item .d { width: 6px; height: 6px; border-radius: 50%; background: var(--gradient); }
+
+  /* Stat ticker */
+  .stat-row {
+    display: flex; gap: 40px; justify-content: center; flex-wrap: wrap;
+    margin-top: 48px;
+  }
+  .stat { text-align: center; }
+  .stat-num {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 32px; font-weight: 700;
+    background: var(--gradient); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .stat-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+  /* Button ripple */
+  .btn-primary, .btn-secondary { position: relative; overflow: hidden; }
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    transform: scale(0);
+    animation: rippleAnim 0.6s ease-out;
+    pointer-events: none;
+  }
+  @keyframes rippleAnim {
+    to { transform: scale(4); opacity: 0; }
+  }
+
+  /* Checksum row */
+  .checksum {
+    margin-top: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--text-dim);
+    word-break: break-all;
+    opacity: 0.7;
+  }
+
+  /* ===== Setup walkthrough (scoped below) ===== */
+  .player {
+    width: 100%; max-width: 780px;
+  }
+  .player-head { text-align: center; margin-bottom: 20px; }
+  .player-head .tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--teal);
+    text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px;
+  }
+  .player-head h1 { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 600; }
+
+  .frame {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  /* fake browser chrome */
+  .chrome-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  .dots { display: flex; gap: 6px; }
+  .dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .dots .r { background: #ff5f57; } .dots .y { background: #febc2e; } .dots .g { background: #28c840; }
+  .addr {
+    flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 7px;
+    padding: 6px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim);
+    overflow: hidden; white-space: nowrap;
+  }
+
+  .stage {
+    position: relative;
+    height: 380px;
+    background: radial-gradient(circle at 30% 20%, rgba(124,92,252,0.08), transparent 60%), #0D0C10;
+    overflow: hidden;
+  }
+  .scene {
+    position: absolute; inset: 0;
+    padding: 28px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity .45s ease, transform .45s ease;
+    pointer-events: none;
+  }
+  .scene.active { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+  .mock-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--gradient); color: white; font-weight: 600; font-size: 13px;
+    padding: 10px 18px; border-radius: 8px; border: none;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .mock-btn.ghost { background: var(--surface-2); border: 1px solid var(--border); color: var(--text); }
+  .mock-btn.hit { transform: scale(0.94); box-shadow: 0 0 0 6px rgba(124,92,252,0.25); }
+
+  .mock-toggle {
+    width: 40px; height: 22px; border-radius: 100px; background: var(--surface-2);
+    border: 1px solid var(--border); position: relative; transition: background .3s;
+  }
+  .mock-toggle::after {
+    content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--text-dim); transition: transform .3s, background .3s;
+  }
+  .mock-toggle.on { background: var(--violet); }
+  .mock-toggle.on::after { transform: translateX(18px); background: white; }
+
+  .mock-card {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; display: flex; align-items: center; gap: 12px; font-size: 13px;
+  }
+  .mock-icon { width: 30px; height: 30px; border-radius: 8px; background: var(--gradient); flex-shrink: 0; }
+
+  .mock-input {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; font-size: 13px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;
+    min-height: 20px;
+  }
+
+  .wt-cursor {
+    position: absolute; width: 18px; height: 18px; z-index: 20;
+    transition: left .9s cubic-bezier(.3,.7,.2,1), top .9s cubic-bezier(.3,.7,.2,1);
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+  }
+
+  .caption-bar {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 14px; color: var(--text-dim);
+    min-height: 20px;
+  }
+  .caption-bar strong { color: var(--text); font-weight: 600; }
+
+  /* progress + controls */
+  .controls {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .ctrl-btn {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text); flex-shrink: 0;
+    transition: border-color .2s;
+  }
+  .ctrl-btn:hover { border-color: var(--violet); }
+  .progress-track {
+    flex: 1; display: flex; gap: 4px;
+  }
+  .progress-seg { flex: 1; height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
+  .progress-seg .fill { height: 100%; width: 0%; background: var(--gradient); }
+  .progress-seg.done .fill { width: 100%; transition: none; }
+  .progress-seg.current .fill { transition: width linear; }
+  .step-count { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); flex-shrink: 0; }
+
+  .below {
+    text-align: center; margin-top: 20px; color: var(--text-dim); font-size: 13px;
+  }
+  .below a { color: var(--teal); text-decoration: none; }
+
+  .type-cursor {
+    display: inline-block; width: 2px; height: 13px; background: var(--teal);
+    animation: blink 0.9s step-start infinite; vertical-align: middle; margin-left: 1px;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<div class="cursor-spark" id="cursorSpark"></div>
+
+<div class="glow-field">
+  <div class="glow-orb a"></div>
+  <div class="glow-orb b"></div>
+  <div class="glow-orb c"></div>
+</div>
+
+<nav>
+  <div class="wrap">
+    <div class="brand">
+      <span class="brand-mark">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9H21.5L15.5 13.5L18 21L12 16.5L6 21L8.5 13.5L2.5 9H9.5L12 2Z" fill="white"/></svg>
+      </span>
+      Forge
+    </div>
+    <div class="links">
+      <a href="#how">How it works</a>
+      <a href="#walkthrough">Watch setup</a>
+      <a href="#platforms">Platforms</a>
+      <a href="#install">Install</a>
+    </div>
+    <a class="btn-ghost" href="https://github.com/YOUR_USERNAME/forge" target="_blank">GitHub</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <canvas id="particles"></canvas>
+  <div class="wrap">
+    <div class="eyebrow"><span class="pulse-dot"></span> Free · powered by Groq · no signup</div>
+    <h1>Your prompts,<br><span class="accent">forged sharp.</span></h1>
+    <p class="sub">A browser extension that rewrites rough prompts into clear, structured ones — right inside Claude, ChatGPT, and Gemini. One click, before you hit send.</p>
+    <div class="hero-ctas">
+      <a class="btn-primary magnetic" href="/forge-extension.zip" download id="downloadBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3V16M12 16L7 11M12 16L17 11M5 21H19" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Download for Chrome
+      </a>
+      <a class="btn-secondary magnetic" href="https://github.com/YOUR_USERNAME/forge" target="_blank">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        View source
+      </a>
+    </div>
+
+    <div class="stat-row reveal">
+      <div class="stat"><div class="stat-num" data-count="30">0</div><div class="stat-label">requests/min free</div></div>
+      <div class="stat"><div class="stat-num">$0</div><div class="stat-label">cost to run</div></div>
+      <div class="stat"><div class="stat-num" data-count="3">0</div><div class="stat-label">platforms supported</div></div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-card">
+        <div class="demo-header">
+          <span class="demo-dot r"></span><span class="demo-dot y"></span><span class="demo-dot g"></span>
+          <span class="demo-title">claude.ai</span>
+        </div>
+        <div class="demo-body">
+          <div class="demo-label">Your draft</div>
+          <div class="demo-text rough" id="roughText"></div>
+          <div class="demo-divider">
+            <div class="demo-spark">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9H21.5L15.5 13.5L18 21L12 16.5L6 21L8.5 13.5L2.5 9H9.5L12 2Z" fill="white"/></svg>
+            </div>
+          </div>
+          <div class="demo-label">Forged</div>
+          <div class="demo-text enhanced" id="enhancedText"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="how">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="section-label">How it works</div>
+      <h2 class="section-title">Three steps, zero friction.</h2>
+      <p class="section-sub">No accounts, no cloud storage of your prompts, no leaving the page you're already on.</p>
+    </div>
+    <div class="steps reveal">
+      <div class="step tilt">
+        <div class="step-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 20V4M12 4L6 10M12 4L18 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="step-num">01</div>
+        <h3>Write your rough idea</h3>
+        <p>Type into Claude, ChatGPT, or Gemini like you normally would — half-formed thoughts included.</p>
+      </div>
+      <div class="step tilt">
+        <div class="step-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9H21.5L15.5 13.5L18 21L12 16.5L6 21L8.5 13.5L2.5 9H9.5L12 2Z" fill="white"/></svg></div>
+        <div class="step-num">02</div>
+        <h3>Hit the spark</h3>
+        <p>Forge sends it to Groq's Llama 3.3 70B, which restructures it for the exact platform you're on.</p>
+      </div>
+      <div class="step tilt">
+        <div class="step-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="step-num">03</div>
+        <h3>Review, then send</h3>
+        <p>Preview the rewrite, tweak anything, accept. Nothing sends automatically — you're always in control.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="platforms">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="section-label">Works where you already are</div>
+      <h2 class="section-title">One extension, every major AI chat.</h2>
+    </div>
+    <div class="platforms reveal">
+      <div class="platform-pill"><span class="platform-dot"></span> Claude</div>
+      <div class="platform-pill"><span class="platform-dot"></span> ChatGPT</div>
+      <div class="platform-pill"><span class="platform-dot"></span> Gemini</div>
+    </div>
+
+    <div class="marquee-wrap reveal" style="margin-top:40px;">
+      <div class="marquee-track" id="marqueeTrack"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="reveal">
+      <div class="section-label">Why Forge</div>
+      <h2 class="section-title">Built to stay out of your way.</h2>
+    </div>
+    <div class="features reveal">
+      <div class="feature tilt">
+        <h4>Genuinely free</h4>
+        <p>Runs on Groq's free tier — no card required, no subscription, no usage cap you'll hit in normal use.</p>
+      </div>
+      <div class="feature tilt">
+        <h4>Fast enough to feel instant</h4>
+        <p>Groq's LPU hardware returns rewrites in under a second — no spinner fatigue.</p>
+      </div>
+      <div class="feature tilt">
+        <h4>You approve every change</h4>
+        <p>Every rewrite shows in a preview first. Forge never sends anything on your behalf.</p>
+      </div>
+      <div class="feature tilt">
+        <h4>Bring your own key</h4>
+        <p>Your Groq API key stays in your browser's local storage — never on a server you don't control.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="section-label">Get started</div>
+      <h2 class="section-title">Install in under a minute.</h2>
+      <p class="section-sub">Not yet on the Chrome Web Store — load it directly for now. Prefer watching? <a href="#walkthrough" style="color:var(--teal)">Watch the setup walkthrough →</a></p>
+    </div>
+    <div class="install-box reveal">
+      <div class="install-steps">
+        <div class="install-step">
+          <div class="install-step-num"></div>
+          <div class="install-step-text">Click <strong>Download for Chrome</strong> above — it saves <code>forge-extension.zip</code> straight from this site, then unzip it.</div>
+        </div>
+        <div class="install-step">
+          <div class="install-step-num"></div>
+          <div class="install-step-text">Open <code>chrome://extensions</code> and enable <strong>Developer mode</strong> (top right).</div>
+        </div>
+        <div class="install-step">
+          <div class="install-step-num"></div>
+          <div class="install-step-text">Click <strong>Load unpacked</strong> and select the unzipped folder (the one containing <code>manifest.json</code>).</div>
+        </div>
+        <div class="install-step">
+          <div class="install-step-num"></div>
+          <div class="install-step-text">Click the Forge icon in your toolbar, paste a free key from <a href="https://console.groq.com/keys" target="_blank" style="color:var(--teal)">console.groq.com</a>, and save.</div>
+        </div>
+      </div>
+      <div class="checksum" id="checksumRow">SHA-256 · verifying…</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="cta-final reveal">
+      <h2>Stop sending half-formed prompts.</h2>
+      <p>Free, open-source, and ready in under a minute.</p>
+      <a class="btn-primary magnetic" href="/forge-extension.zip" download>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3V16M12 16L7 11M12 16L17 11M5 21H19" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Download Forge
+      </a>
+    </div>
+  </div>
+</section>
+
+
+<section id="walkthrough">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="section-label">See it in action</div>
+      <h2 class="section-title">Watch the setup, start to finish.</h2>
+      <p class="section-sub">A self-playing walkthrough of the whole install — no sound needed.</p>
+    </div>
+    <div class="reveal" style="display:flex; justify-content:center;">
+<div class="player">
+  <div class="player-head">
+    <div class="tag">Setup walkthrough</div>
+    <h1>Installing Forge, start to finish</h1>
+  </div>
+
+  <div class="frame">
+    <div class="chrome-bar">
+      <div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="addr" id="addrBar">forgeprompt.app</div>
+    </div>
+
+    <div class="stage" id="stage">
+      <!-- Scene 1: homepage / download -->
+      <div class="scene active" data-scene="0">
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:600; margin-bottom:6px;">Your prompts, <span style="background:var(--gradient);-webkit-background-clip:text;background-clip:text;color:transparent;">forged sharp.</span></div>
+        <div style="color:var(--text-dim); font-size:13px; margin-bottom:20px; max-width:380px;">A browser extension that rewrites rough prompts into clear ones — on Claude, ChatGPT, and Gemini.</div>
+        <button class="mock-btn" id="dlBtn">⬇ Download for Chrome</button>
+      </div>
+
+      <!-- Scene 2: downloads / unzip -->
+      <div class="scene" data-scene="1">
+        <div style="font-size:13px; color:var(--text-dim); margin-bottom:14px;">Downloads</div>
+        <div class="mock-card" id="zipCard" style="max-width:280px;">
+          <div class="mock-icon"></div>
+          <div>
+            <div style="font-weight:600;">forge-extension.zip</div>
+            <div style="font-size:11px; color:var(--text-dim);" id="zipStatus">16 KB</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 3: chrome://extensions address -->
+      <div class="scene" data-scene="2">
+        <div style="display:flex; align-items:center; justify-content:center; height:100%; font-family:'JetBrains Mono',monospace; font-size:15px; color:var(--text-dim);">
+          Navigating to <span style="color:var(--teal); margin-left:6px;">chrome://extensions</span><span class="type-cursor"></span>
+        </div>
+      </div>
+
+      <!-- Scene 4: developer mode toggle -->
+      <div class="scene" data-scene="3">
+        <div style="display:flex; align-items:center; justify-content:space-between; max-width:380px; margin-bottom:24px;">
+          <span style="font-size:14px; font-weight:500;">Developer mode</span>
+          <div class="mock-toggle" id="devToggle"></div>
+        </div>
+        <button class="mock-btn ghost" id="loadBtn">Load unpacked</button>
+      </div>
+
+      <!-- Scene 5: file picker -->
+      <div class="scene" data-scene="4">
+        <div style="font-size:13px; color:var(--text-dim); margin-bottom:12px;">Select folder</div>
+        <div class="mock-card" id="folderCard" style="max-width:280px;">
+          <div class="mock-icon" style="background:var(--surface-2); border:1px solid var(--border);"></div>
+          <div>
+            <div style="font-weight:600;">forge-extension</div>
+            <div style="font-size:11px; color:var(--text-dim);">manifest.json inside</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 6: extension installed -->
+      <div class="scene" data-scene="5">
+        <div class="mock-card" style="max-width:320px; border-color:rgba(124,92,252,0.4);">
+          <div class="mock-icon"></div>
+          <div>
+            <div style="font-weight:600;">Forge <span style="color:var(--teal); font-size:11px; font-weight:400;">✓ Installed</span></div>
+            <div style="font-size:11px; color:var(--text-dim);">Forges your prompts before you send them</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 7: API key popup -->
+      <div class="scene" data-scene="6">
+        <div style="max-width:260px; margin: 0 auto;">
+          <div style="font-weight:600; margin-bottom:14px; display:flex; align-items:center; gap:8px;"><span class="mock-icon" style="width:20px;height:20px;"></span> Forge</div>
+          <div style="font-size:11px; color:var(--text-dim); margin-bottom:5px;">Groq API Key</div>
+          <div class="mock-input" id="keyInput">gsk_••••••••••••<span class="type-cursor"></span></div>
+          <button class="mock-btn" style="width:100%; justify-content:center; margin-top:12px;" id="saveBtn">Save Key</button>
+        </div>
+      </div>
+
+      <!-- Scene 8: using it on claude.ai -->
+      <div class="scene" data-scene="7">
+        <div style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">claude.ai</div>
+        <div class="mock-input" id="promptInput" style="min-height:50px; max-width:420px;"></div>
+        <div style="position:relative; height:0;">
+          <button class="mock-btn" id="sparkBtn" style="position:absolute; right:0; top:14px; width:38px; height:38px; border-radius:50%; padding:0; justify-content:center;">⚡</button>
+        </div>
+      </div>
+
+      <!-- Scene 9: preview + use -->
+      <div class="scene" data-scene="8">
+        <div class="mock-card" style="flex-direction:column; align-items:flex-start; max-width:420px;">
+          <div style="font-weight:600; margin-bottom:8px;">✨ Forged prompt</div>
+          <div class="mock-input" id="enhancedPreview" style="width:100%; min-height:60px;"></div>
+          <button class="mock-btn" id="useBtn" style="margin-top:12px;">Use this</button>
+        </div>
+      </div>
+
+      <div class="wt-cursor" id="wtCursor" style="left:70%; top:60%;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 2L20 10L12 12L10 20L4 2Z" fill="white" stroke="black" stroke-width="1"/></svg>
+      </div>
+    </div>
+
+    <div class="caption-bar" id="caption">Click <strong>Download for Chrome</strong> — it saves straight from the site.</div>
+
+    <div class="controls">
+      <div class="ctrl-btn" id="playPause">
+        <svg id="iconPause" width="12" height="12" viewBox="0 0 24 24" fill="white"><rect x="4" y="3" width="6" height="18"/><rect x="14" y="3" width="6" height="18"/></svg>
+        <svg id="iconPlay" width="12" height="12" viewBox="0 0 24 24" fill="white" style="display:none;"><path d="M6 4L20 12L6 20V4Z"/></svg>
+      </div>
+      <div class="progress-track" id="progressTrack"></div>
+      <div class="step-count" id="stepCount">1 / 9</div>
+      <div class="ctrl-btn" id="replayBtn" title="Replay">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 4v6h6M20 20v-6h-6M4.5 15A8 8 0 1 0 6 6.3L4 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Forge is open source · <a href="https://github.com/YOUR_USERNAME/forge" target="_blank">GitHub</a> · Not affiliated with Anthropic, OpenAI, Google, or Groq
+  </div>
+</footer>
+
+<script>
+  // Typing demo animation
+  const rough = "help me write something for my boss about the project delay";
+  const enhanced = "Write a professional email to my manager explaining a project delay.\\n\\nInclude:\\n- The reason for the delay\\n- The revised timeline\\n- What I'm doing to prevent further slippage\\n\\nKeep the tone accountable but not overly apologetic.";
+
+  function typeInto(el, text, speed, cb) {
+    let i = 0;
+    el.innerHTML = '';
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    function step() {
+      if (i <= text.length) {
+        el.textContent = text.slice(0, i);
+        el.appendChild(cursor);
+        i++;
+        setTimeout(step, speed);
+      } else {
+        cursor.remove();
+        if (cb) cb();
+      }
+    }
+    step();
+  }
+
+  function runDemo() {
+    const roughEl = document.getElementById('roughText');
+    const enhancedEl = document.getElementById('enhancedText');
+    roughEl.textContent = '';
+    enhancedEl.textContent = '';
+    typeInto(roughEl, rough, 28, () => {
+      setTimeout(() => {
+        typeInto(enhancedEl, enhanced, 12, () => {
+          setTimeout(runDemo, 3200);
+        });
+      }, 500);
+    });
+  }
+  runDemo();
+
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isTouch = window.matchMedia('(hover: none)').matches;
+
+  // ---- Word-by-word title reveal ----
+  document.querySelectorAll('.section-title').forEach(el => {
+    const words = el.textContent.trim().split(' ');
+    el.innerHTML = words.map(w => `<span class="word-reveal"><span>${w}</span></span>`).join(' ');
+  });
+  const wordObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.querySelectorAll('.word-reveal').forEach((w, i) => {
+          setTimeout(() => w.classList.add('in'), i * 60);
+        });
+        wordObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.4 });
+  document.querySelectorAll('.section-title').forEach(el => wordObserver.observe(el));
+
+  // ---- Cursor spark trail (desktop only) ----
+  if (!isTouch && !reduceMotion) {
+    const spark = document.getElementById('cursorSpark');
+    let mx = 0, my = 0, sx = 0, sy = 0;
+    window.addEventListener('mousemove', (e) => {
+      mx = e.clientX; my = e.clientY;
+      spark.style.opacity = '1';
+    });
+    document.addEventListener('mouseleave', () => spark.style.opacity = '0');
+    function followCursor() {
+      sx += (mx - sx) * 0.18;
+      sy += (my - sy) * 0.18;
+      spark.style.left = sx + 'px';
+      spark.style.top = sy + 'px';
+      requestAnimationFrame(followCursor);
+    }
+    followCursor();
+  }
+
+  // ---- Magnetic buttons ----
+  if (!isTouch && !reduceMotion) {
+    document.querySelectorAll('.magnetic').forEach(btn => {
+      btn.addEventListener('mousemove', (e) => {
+        const r = btn.getBoundingClientRect();
+        const x = e.clientX - r.left - r.width / 2;
+        const y = e.clientY - r.top - r.height / 2;
+        btn.style.transform = `translate(${x * 0.18}px, ${y * 0.3}px)`;
+      });
+      btn.addEventListener('mouseleave', () => { btn.style.transform = 'translate(0,0)'; });
+    });
+  }
+
+  // ---- Button ripple ----
+  document.querySelectorAll('.btn-primary, .btn-secondary').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      const r = this.getBoundingClientRect();
+      const ripple = document.createElement('span');
+      ripple.className = 'ripple';
+      const size = Math.max(r.width, r.height);
+      ripple.style.width = ripple.style.height = size + 'px';
+      ripple.style.left = (e.clientX - r.left - size / 2) + 'px';
+      ripple.style.top = (e.clientY - r.top - size / 2) + 'px';
+      this.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 650);
+    });
+  });
+
+  // ---- 3D tilt cards ----
+  if (!isTouch && !reduceMotion) {
+    document.querySelectorAll('.tilt').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const r = card.getBoundingClientRect();
+        const px = (e.clientX - r.left) / r.width - 0.5;
+        const py = (e.clientY - r.top) / r.height - 0.5;
+        card.style.transform = `perspective(600px) rotateX(${-py * 8}deg) rotateY(${px * 8}deg) translateY(-4px)`;
+      });
+      card.addEventListener('mouseleave', () => { card.style.transform = ''; });
+    });
+  }
+
+  // ---- Particle canvas (hero) ----
+  (function particles() {
+    const canvas = document.getElementById('particles');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let w, h, particlesArr = [];
+    const COUNT = reduceMotion ? 0 : 45;
+
+    function resize() {
+      w = canvas.width = canvas.parentElement.offsetWidth;
+      h = canvas.height = canvas.parentElement.offsetHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    for (let i = 0; i < COUNT; i++) {
+      particlesArr.push({
+        x: Math.random() * w, y: Math.random() * h,
+        r: Math.random() * 1.6 + 0.4,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        c: Math.random() > 0.5 ? '124,92,252' : '34,211,184',
+        a: Math.random() * 0.5 + 0.2
+      });
+    }
+
+    let running = true;
+    document.addEventListener('visibilitychange', () => { running = !document.hidden; });
+
+    function tick() {
+      if (running && COUNT > 0) {
+        ctx.clearRect(0, 0, w, h);
+        particlesArr.forEach(p => {
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+          if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${p.c},${p.a})`;
+          ctx.fill();
+        });
+      }
+      requestAnimationFrame(tick);
+    }
+    tick();
+  })();
+
+  // ---- Animated stat counters ----
+  const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target;
+      const target = parseInt(el.dataset.count, 10);
+      let cur = 0;
+      const step = Math.max(1, Math.ceil(target / 30));
+      const iv = setInterval(() => {
+        cur += step;
+        if (cur >= target) { cur = target; clearInterval(iv); }
+        el.textContent = cur;
+      }, 30);
+      counterObserver.unobserve(el);
+    });
+  }, { threshold: 0.6 });
+  document.querySelectorAll('[data-count]').forEach(el => counterObserver.observe(el));
+
+  // ---- Marquee content ----
+  const marqueeItems = ['Claude', 'ChatGPT', 'Gemini', 'Groq · Llama 3.3 70B', 'Manifest V3', 'Free forever'];
+  const marqueeHTML = marqueeItems.map(t => `<span class="marquee-item"><span class="d"></span>${t}</span>`).join('');
+  const track = document.getElementById('marqueeTrack');
+  if (track) track.innerHTML = marqueeHTML + marqueeHTML; // duplicate for seamless loop
+
+  // ---- Checksum display ----
+  const row = document.getElementById('checksumRow');
+  if (row) row.textContent = 'SHA-256: 855fabf566029153c7d72934b3fbf261bb20d68287a3eb8f3eed737c204b255d';
+
+(function () {
+const scenes = [
+  { addr: 'forgeprompt.app', caption: 'Click <strong>Download for Chrome</strong> — it saves straight from the site, no GitHub redirect.', duration: 4200,
+    setup: () => moveCursor(62, 74), action: () => hit('dlBtn') },
+  { addr: 'forgeprompt.app', caption: 'Unzip the downloaded file — you\'ll get one folder to keep track of.', duration: 3800,
+    setup: () => moveCursor(28, 62), action: () => { hit('zipCard'); setTimeout(() => document.getElementById('zipStatus').textContent = 'Unzipped ✓', 500); } },
+  { addr: 'chrome://extensions', caption: 'Open a new tab and go to <strong>chrome://extensions</strong>.', duration: 3200,
+    setup: () => moveCursor(50, 50), action: () => {} },
+  { addr: 'chrome://extensions', caption: 'Turn on <strong>Developer mode</strong>, top right — then click <strong>Load unpacked</strong>.', duration: 4400,
+    setup: () => moveCursor(78, 34), action: () => { toggleOn(); setTimeout(() => moveCursor(30, 68), 700); setTimeout(() => hit('loadBtn'), 1500); } },
+  { addr: 'chrome://extensions', caption: 'Select the unzipped folder — the one with <strong>manifest.json</strong> inside.', duration: 3800,
+    setup: () => moveCursor(28, 55), action: () => hit('folderCard') },
+  { addr: 'chrome://extensions', caption: 'Forge is installed.', duration: 3000,
+    setup: () => moveCursor(50, 50), action: () => {} },
+  { addr: 'chrome://extensions', caption: 'Click the toolbar icon, paste a free key from <strong>console.groq.com/keys</strong>, and save.', duration: 4600,
+    setup: () => moveCursor(50, 60), action: () => { typeInto('keyInput', 'gsk_••••••••••••', 40, () => setTimeout(() => hit('saveBtn'), 300)); } },
+  { addr: 'claude.ai', caption: 'Type a rough prompt, then click the spark button.', duration: 4600,
+    setup: () => moveCursor(50, 30), action: () => { typeInto('promptInput', 'help me write an email about a delay', 30, () => setTimeout(() => { moveCursor(93, 27); setTimeout(() => hit('sparkBtn'), 700); }, 200)); } },
+  { addr: 'claude.ai', caption: 'Review the rewrite, then click <strong>Use this</strong> — done.', duration: 4400,
+    setup: () => moveCursor(50, 65), action: () => { typeInto('enhancedPreview', 'Write a professional email explaining a project delay, including the revised timeline.', 14, () => setTimeout(() => hit('useBtn'), 300)); } },
+];
+
+let current = 0;
+let playing = true;
+let timer = null;
+let segFillTimer = null;
+
+const stageEl = document.getElementById('stage');
+const captionEl = document.getElementById('caption');
+const addrEl = document.getElementById('addrBar');
+const cursorEl = document.getElementById("wtCursor");
+const trackEl = document.getElementById('progressTrack');
+const stepCountEl = document.getElementById('stepCount');
+
+scenes.forEach((_, i) => {
+  const seg = document.createElement('div');
+  seg.className = 'progress-seg';
+  seg.innerHTML = '<div class="fill"></div>';
+  seg.addEventListener('click', () => goTo(i));
+  trackEl.appendChild(seg);
+});
+const segs = trackEl.querySelectorAll('.progress-seg');
+
+function moveCursor(xPct, yPct) {
+  cursorEl.style.left = xPct + '%';
+  cursorEl.style.top = yPct + '%';
+}
+function hit(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('hit');
+  setTimeout(() => el.classList.remove('hit'), 260);
+}
+function toggleOn() {
+  document.getElementById('devToggle').classList.add('on');
+}
+function typeInto(id, text, speed, cb) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  let i = 0;
+  el.innerHTML = '';
+  function step() {
+    if (i <= text.length) {
+      el.innerHTML = text.slice(0, i) + '<span class="type-cursor"></span>';
+      i++;
+      setTimeout(step, speed);
+    } else if (cb) cb();
+  }
+  step();
+}
+
+function renderScene(idx) {
+  document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+  document.querySelector(`.scene[data-scene="${idx}"]`).classList.add('active');
+  addrEl.textContent = scenes[idx].addr;
+  captionEl.innerHTML = scenes[idx].caption;
+  stepCountEl.textContent = `${idx + 1} / ${scenes.length}`;
+  segs.forEach((seg, i) => {
+    seg.classList.toggle('done', i < idx);
+    seg.classList.toggle('current', i === idx);
+    const fill = seg.querySelector('.fill');
+    if (i < idx) { fill.style.transition = 'none'; fill.style.width = '100%'; }
+    else if (i === idx) { fill.style.transition = 'none'; fill.style.width = '0%'; }
+    else { fill.style.transition = 'none'; fill.style.width = '0%'; }
+  });
+  scenes[idx].setup();
+  setTimeout(() => scenes[idx].action(), 550);
+}
+
+function startSegFill() {
+  const seg = segs[current];
+  const fill = seg.querySelector('.fill');
+  requestAnimationFrame(() => {
+    fill.style.transition = `width ${scenes[current].duration}ms linear`;
+    fill.style.width = '100%';
+  });
+}
+
+function goTo(idx) {
+  clearTimeout(timer);
+  current = idx;
+  renderScene(current);
+  if (playing) {
+    startSegFill();
+    timer = setTimeout(advance, scenes[current].duration);
+  }
+}
+
+function advance() {
+  current = (current + 1) % scenes.length;
+  renderScene(current);
+  startSegFill();
+  timer = setTimeout(advance, scenes[current].duration);
+}
+
+function play() {
+  playing = true;
+  document.getElementById('iconPause').style.display = '';
+  document.getElementById('iconPlay').style.display = 'none';
+  startSegFill();
+  timer = setTimeout(advance, scenes[current].duration);
+}
+function pause() {
+  playing = false;
+  clearTimeout(timer);
+  document.getElementById('iconPause').style.display = 'none';
+  document.getElementById('iconPlay').style.display = '';
+  const seg = segs[current];
+  const fill = seg.querySelector('.fill');
+  const computed = getComputedStyle(fill).width;
+  fill.style.transition = 'none';
+  fill.style.width = computed;
+}
+
+document.getElementById('playPause').addEventListener('click', () => {
+  if (playing) pause(); else play();
+});
+document.getElementById('replayBtn').addEventListener('click', () => {
+  goTo(0);
+});
+
+// init
+renderScene(0);
+startSegFill();
+timer = setTimeout(advance, scenes[0].duration);
+})();
+
+</script>
+
+</body>
+</html>

@@ -97,6 +97,6 @@ git remote set-url origin https://github.com/<your-username>/forge.git
 
 Fork it, branch it, PR it. If you touch `extension/`, run `./build-extension-zip.sh` before you commit so the download stays in sync.
 
-# License
+## License
 
-All rights reserved. Public to look at, not free to reuse without asking.
+MIT — free to use, modify, and distribute.

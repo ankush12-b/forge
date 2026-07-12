@@ -29,10 +29,6 @@ This prints a new SHA-256 checksum — paste it into the `checksumRow` line near
 
 You can *additionally* publish to GitHub Releases if you want a version history, but it's optional — the site's download button never depends on it.
 
-### Chrome Web Store (when ready)
-1. [Developer Dashboard](https://chrome.google.com/webstore/devconsole) — $5 one-time fee
-2. Upload the same zip, add a short privacy policy (required — Forge sends typed prompt text to Groq's API)
-3. Submit for review (typically hours to a few days)
 
 ## Site
 

@@ -48,7 +48,7 @@ vercel --prod           # promote to production
 Or connect the GitHub repo directly in the [Vercel dashboard](https://vercel.com/new) → set **Root Directory** to `site` → deploy. Every push to `main` auto-deploys after that.
 
 ### Before deploying
-Search `site/index.html` for `YOUR_USERNAME` and replace with your actual GitHub username/repo, so the GitHub and download links resolve correctly.
+Search `site/index.html` for `ankush12-b` and replace with your actual GitHub username/repo, so the GitHub and download links resolve correctly.
 
 ## Push this repo to GitHub
 ```bash
@@ -57,7 +57,7 @@ git init
 git add .
 git commit -m "Initial commit: Forge extension + site"
 git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/forge.git
+git remote add origin https://github.com/ankush12-b/forge.git
 git push -u origin main
 ```
 
